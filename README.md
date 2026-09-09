@@ -1,5 +1,7 @@
 # ComfyUI-HJL-easyuse
 
+[English](README_EN.md) | 简体中文
+
 面向 **MiniMax H3 音视频生成**的 ComfyUI 自定义节点集。把多节点的双阶段采样工作流打包成一键节点。
 
 ## 节点列表
