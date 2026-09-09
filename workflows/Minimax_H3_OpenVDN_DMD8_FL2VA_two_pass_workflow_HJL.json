@@ -229,8 +229,8 @@
         -47.99141161612721
       ],
       "size": [
-        982.5625,
-        126
+        1164.359375,
+        358
       ],
       "flags": {},
       "order": 14,
@@ -624,8 +624,8 @@
       "id": 44,
       "type": "MarkdownNote",
       "pos": [
-        -592.6010584334693,
-        179.23094466294424
+        -501.85105843347355,
+        172.5087224407223
       ],
       "size": [
         300,
@@ -781,6 +781,8 @@
         }
       ],
       "properties": {
+        "aux_id": "hjl668877/ComfyUI-HJL-easyuse",
+        "ver": "0c72de0fa4bbc7c2a82c3e153cdbd19623a23a03",
         "Node name for S&R": "H3_TwoPassSampler",
         "ue_properties": {
           "widget_ue_connectable": {},
@@ -794,14 +796,14 @@
         39,
         0.4,
         1.2,
-        "Ref2VA",
+        "FL2VA",
         "native",
         "3 steps",
         8,
         4,
         "dual_clock_euler",
         "native_flow",
-        24185786479673,
+        178305931404771,
         "randomize",
         0.5,
         "minimax_h3_latent_upscaler_3d_fp16.safetensors"
@@ -928,10 +930,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.5950413223140771,
+      "scale": 0.6545454545454849,
       "offset": [
-        700.8167269478893,
-        704.2107897240602
+        481.677520268028,
+        663.0208313499376
       ]
     },
     "ue_links": [],
