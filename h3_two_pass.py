@@ -21,6 +21,11 @@ import torch
 
 from comfy_api.latest import io
 
+try:
+    from .t8_compat import ensure_t8_hybrid_probe_fix
+except ImportError:      # 被当作顶层模块导入时（如离线测试脚本）
+    from t8_compat import ensure_t8_hybrid_probe_fix
+
 # ------------------------- 常量（与工作流一致） -------------------------
 
 ASPECT_RATIOS = {
@@ -264,6 +269,10 @@ class H3_TwoPassSampler(io.ComfyNode):
                 drive_audio=None, final_audio=None, first_frame=None, last_frame=None,
                 ref_images=None, ref_videos=None, ref_video_audios=None, ref_audios=None,
                 reserved_vram=0.5, upscaler_model=DEFAULT_UPSCALER):
+
+        # 第三方 T8 的 Hybrid 探测在当前 ComfyUI 上必然失败（探测数据用了非法
+        # keyframe 索引），这里在内存中打兼容补丁，不改 T8 源文件（详见 t8_compat.py）。
+        ensure_t8_hybrid_probe_fix()
 
         w1, h1 = _dims(aspect_ratio, stage1_megapixels)
         w2, h2 = _dims(aspect_ratio, stage2_megapixels)

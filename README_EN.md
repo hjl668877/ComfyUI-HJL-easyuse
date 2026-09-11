@@ -42,6 +42,77 @@ One-click recreation of the MiniMax H3 two-pass sampling workflow (low-res DMD d
 
 > **VRAM timing note**: both internal ReservedVRAM settings execute once at the very beginning (matching the real execution order of the original workflow). No models are unloaded mid-run — stage 2 reuses the UNET already loaded by stage 1. Do not attach external nodes that unload models mid-run to the same prompt.
 
+### H3 Two-Pass Long Time V2 (HJL)
+
+The **long-video** node: splits a clip into equal time chunks, runs a full two-pass sampling per chunk, and stitches them together with **latent continuation**. Supports **per-chunk prompts** so different segments can be described differently.
+
+![H3 Two-Pass Long Time V2 node](screenshot-H3-Two-Pass-Long-Time-V2.png)
+
+With a single chunk the behavior matches H3 Two-Pass Sampler; once the total length exceeds the per-chunk cap (`temporal_chunk_frames`) it splits automatically, breaking past the single-run length limit.
+
+**Core mechanisms**
+
+| Mechanism | Description |
+|---|---|
+| Time chunking | chunks = ⌈length ÷ temporal_chunk_frames⌉, then the total frame count is **split evenly** across chunks to avoid a very short tail chunk (the old fixed-cut method produced 136+136+16, making the last chunk impossible to connect) |
+| Latent continuation | takes the **stage-1 denoised video latent tail** of the previous chunk (8 frames by default) and, after truncating the sigma schedule by `continuation_strength`, uses it as the next chunk's starting point — inheriting motion, detail and texture instead of re-imagining from pure noise |
+| Per-chunk prompts | separate with a **line containing only** `---` inside `prompt`; they map to chunk 1/2/3… in order. If fewer prompts than chunks, the remaining chunks reuse the last one; without `---` the prompt applies to all chunks |
+
+**Key inputs** (all other ports are identical to H3 Two-Pass Sampler)
+
+| Port | Default | Description |
+|---|---|---|
+| prompt | empty | Video description; supports `---` chunking |
+| length | 141 | **Total** frame count (24fps) |
+| temporal_chunk_frames | 136 | Per-chunk frame **cap**, must be a multiple of 17 (set it to what you can reliably run in one go; 6s ≈ 136) |
+| temporal_overlap_frames | 0 | **Extra** frames dropped at the start of each chunk. The node always drops the 1 duplicated anchor frame; N here drops N more (large values cause time jumps) |
+| latent_continuation | True | Toggle latent continuation (off = each chunk restarts from pure noise) |
+| continuation_strength | 0.5 | 0–1: higher stays closer to the previous chunk (smoother, less change); use ~0.3 together with per-chunk prompts |
+| continuation_frames | 8 | How many latent time frames of the previous chunk seed the next one |
+| same_seed_all_chunks | False | Share one seed across chunks for more consistent texture |
+| save_per_chunk | True | Write PNGs to `output/h3_chunks/<prefix>/chunk_XXXX/` right after each chunk and release its frames |
+| combine_saved_chunks | False | After the run, stream-combine all chunk PNGs into `combined.mp4` via ffmpeg (zero memory spike at the end) |
+| merge_chunks | True | Concatenate all chunks into the `frames` output; **turn it off beyond ~15s** and use the disk path instead |
+| frame_dtype | uint8 | Accumulation precision: uint8 saves 4× memory (output is still fp32 `[0,1]`; no audible/visible quality impact) |
+| chunk_filename_prefix | h3_chunk | Output subfolder name |
+
+**Outputs**
+
+| Port | Description |
+|---|---|
+| av_latent | AV latent of the last chunk |
+| frames | Full frame sequence (`merge_chunks=True`); otherwise last chunk only |
+| generated_audio | Audio concatenated across chunks |
+| **video** | VIDEO when combining succeeded — connect it to any video preview/save node; an inline preview also appears on the node |
+| info | Execution summary (chunks / frames per chunk / continuation state / prompt chunks / output path) |
+
+**Duration ↔ frames ↔ chunks** (24fps, `temporal_chunk_frames = 136`)
+
+| Duration | length | Chunks | Frames per chunk |
+|---|---|---|---|
+| 5.67s | 136 | 1 | 136 |
+| 8s | 192 | 2 | 96 + 96 |
+| **11.33s** | **272** | **2** | **136 + 136** ⭐ |
+| 12s | 288 | 3 | 96 × 3 |
+| **17s** | **408** | **3** | **136 × 3** ⭐ |
+| 20s | 480 | 4 | 120 × 4 |
+| **22.67s** | **544** | **4** | **136 × 4** ⭐ |
+| 30s | 720 | 6 | 120 × 6 |
+| **34s** | **816** | **6** | **136 × 6** ⭐ |
+| 45.33s | 1088 | 8 | 136 × 8 ⭐ |
+
+Rule: `chunks = ⌈length ÷ 136⌉`; when `length = N × 136` every chunk is exactly equal (5.67 / 11.33 / 17.00 / 22.67 / 28.33 / 34.00 / 39.67 / 45.33 / 51.00 / 56.67 s), giving the most predictable VRAM and runtime. To fix the chunk count, adjust `temporal_chunk_frames`: `chunk ≥ length ÷ desired chunks`, rounded up to a multiple of 17.
+
+**Three ways to get the result**
+
+| Case | Configuration |
+|---|---|
+| ≤15s | `merge_chunks=True`, use the `frames` / `video` ports |
+| Longer (recommended) | `merge_chunks=False` + `save_per_chunk=True` + `combine_saved_chunks=True` — everything goes to disk, zero memory spike |
+| Rescue already-saved PNGs | Standalone tool `combine_h3_chunks.py` (see below) |
+
+> ⚠️ The bottleneck for long videos is usually **system RAM**, not VRAM: ComfyUI keeps frames as fp32 (≈15MB per frame at 1.2MP) and stages model weights on demand. Close memory-hungry apps before running; with `merge_chunks=True` the ending needs a full fp32 frame sequence in memory (≈4GB for 11s, ≈21GB for 60s).
+
 ### H3 Edit Conditioning W/H (HJL)
 
 Built for H3 two-pass upscaling: updates conditioning width/height and resizes the reference latents inside `minimax_refs` / `minimax_keyframes` to the new resolution.
@@ -51,6 +122,28 @@ Built for H3 two-pass upscaling: updates conditioning width/height and resizes t
 - Automatically syncs each reference's latent_h / latent_w / latent_t, completely eliminating the `shape mismatch` error in two-pass upscaling.
 
 Quality ranking: **original-image re-encoding (images connected) > latent decode→encode > latent interpolation**.
+
+## Third-party compatibility patch: `t8_compat.py`
+
+comfyui-minimax-h3-audio-T8's **Hybrid** compatibility probe builds a keyframe with an illegal index on current ComfyUI builds (neither the first frame 0 nor the last frame `frame_count-1`), so the probe always raises and the Hybrid path gets disabled — surfacing as this error when first/last frame **and** reference images are connected together:
+
+```
+RuntimeError: The active MiniMax H3 PackedLayout implementation rejected
+the guarded legacy Hybrid compatibility probe.
+```
+
+This pack **does not modify T8's source**: it applies an in-memory runtime patch (`t8_compat.py` → `ensure_t8_hybrid_probe_fix()`) that rewrites the illegal index to the first frame before delegating to the original function. T8's real generation path only ever uses legal indices, so generation results are unaffected; **once upstream fixes it, the patch degrades into a transparent pass-through** and needs no manual removal. Every sampler node in this pack (H3 Two-Pass Sampler / H3 Two-Pass Long Time V2) calls it at the top of `execute` (idempotent).
+
+## Standalone tool: `combine_h3_chunks.py`
+
+Combine already-saved per-chunk PNG sequences into an MP4 **without re-running the node**:
+
+```bash
+python combine_h3_chunks.py "D:/ComfyUI_windows_portable_nvidia/ComfyUI/output/h3_chunks/h3_chunk" \
+    --fps 24 --crf 18
+```
+
+It concatenates all PNGs under `chunk_*/` in directory order and writes `combined.mp4` (H.264 / yuv420p). Requires `imageio-ffmpeg` (bundles an ffmpeg binary; `pip install imageio-ffmpeg`).
 
 ## Required Dependencies
 
@@ -101,11 +194,12 @@ Model files (H3 base model / VAE / CLIP / latent upscaler) should be downloaded 
 
 ## Example Workflows
 
-Two examples are provided in `workflows/`:
+Three examples are provided in `workflows/`:
 
 | File | Description | Extra requirements |
 |---|---|---|
 | `Minimax_H3_two_pass_sampler_example_workflow_HJL.json` | Basic two-pass workflow (one-click H3_TwoPassSampler version) | Required dependencies only |
+| `Minimax_H3_Two_Pass_FL2VA_Long_Time_V2_HJL_example.json` | **Long-video example**: H3 Two-Pass Long Time V2 + FL2VA first/last frame, 272 frames (11.33s / 2 chunks), with a `---` segmented prompt and a duration-vs-chunks note built in | Required dependencies only |
 | `Minimax_H3_OpenVDN_DMD8_FL2VA_two_pass_workflow_HJL.json` | OpenVDN DMD8 + FL2VA (first-last frame) accelerated variant with VDN model composition and Sol-Attn sparse attention | Also needs VDN-H3 weights and the Sol-Attn node — see "Acceleration Technologies" above |
 
 Place the model files as described in the T8 repository, then run. Overall layout of the basic workflow:
@@ -119,4 +213,6 @@ This node pack strongly depends on comfyui-minimax-h3-audio-T8 (GPL-3.0, called 
 ## Roadmap
 
 - [x] Example workflow JSONs (basic + OpenVDN accelerated)
+- [x] Long-video node H3 Two-Pass Long Time V2 (time chunking + latent continuation + per-chunk prompts)
+- [x] Long-video example workflow (272 frames / 2 chunks / FL2VA)
 - [ ] More aspect-ratio and duration combinations

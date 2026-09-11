@@ -1,0 +1,897 @@
+{
+  "id": "98c3594c-e126-4508-88b1-2b06a269d41b",
+  "revision": 0,
+  "last_node_id": 69,
+  "last_link_id": 196,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "UNETLoader",
+      "pos": [
+        588.3243399030201,
+        -217.62596524894855
+      ],
+      "size": [
+        468.15625,
+        86
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            196
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "UNETLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "DasiwaMinimaxH3_dasiwaREF2VAHybridV1.safetensors",
+        "default"
+      ],
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        310.366759936873,
+        -71.4580380049506
+      ],
+      "size": [
+        421.5,
+        114
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            183
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "CLIPLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax",
+        "default"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        -47.305966576947924,
+        -50.89151628891585
+      ],
+      "size": [
+        320,
+        62
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            184
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "VAELoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        -44.1005654583235,
+        56.73641592579344
+      ],
+      "size": [
+        320,
+        62
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            185
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "VAELoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 14,
+      "type": "SaveVideo",
+      "pos": [
+        1559.9662900237995,
+        98.23587058175724
+      ],
+      "size": [
+        1349.984375,
+        126
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 69
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "title": "Save OpenVDN FL2VA result",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "SaveVideo",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "format": true,
+            "codec": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "MiniMaxH3/OpenVDN",
+        "auto",
+        "auto"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "LoadImage",
+      "pos": [
+        -87.67374030503066,
+        166.08678507465527
+      ],
+      "size": [
+        390,
+        350
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            186
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Replace with first frame",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "mirror_i6rv8cl_1788165791735.png",
+        "image"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "LoadImage",
+      "pos": [
+        319.3411873334875,
+        165.14320198606828
+      ],
+      "size": [
+        390,
+        350
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            187
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "Replace with final frame",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "630f7393bd3c416d9406f396c9e92abc.jpeg~tplv-a9rns2rl98-image.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        -135.13845469205717,
+        559.656523870394
+      ],
+      "size": [
+        897.515625,
+        226.203125
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            97,
+            188
+          ]
+        }
+      ],
+      "title": "Input Text (Prompt)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "PrimitiveStringMultiline",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "value": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "integrated_multimodal_description: [Shot 1] 图中的男人和女人开心的聊天，然后男人把手中的红酒瓶放在桌子上。\n\n---\n男女一起向右走，他们走到吧台，女人坐到椅子上，男人拿起酒瓶，男人往玻璃杯里倒酒。\n\n\n整段为单一连续镜头，无切镜、无溶接、无字幕、无画面文字、无中文字符叠加。\n\noverall_soundscape: N/A\n\nnon_diegetic_music: N/A\n"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 42,
+      "type": "CreateVideo",
+      "pos": [
+        1558.3573084396053,
+        -86.61751618041899
+      ],
+      "size": [
+        317.375,
+        115.90625
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 190
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 191
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            69
+          ]
+        }
+      ],
+      "title": "Create exact 24fps OpenVDN audio/video",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "CreateVideo",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        24,
+        8
+      ]
+    },
+    {
+      "id": 44,
+      "type": "MarkdownNote",
+      "pos": [
+        -501.85105843347355,
+        172.5087224407223
+      ],
+      "size": [
+        300,
+        520
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note: Size Settings Reference",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "| megapixels | Aspect | Output (multiple=32) |\n|---|---|---|\n| 0.2 | 16:9 | 608 x 352 |\n| 0.3 | 16:9 | 736 x 416 |\n| 0.4 | 16:9 | 864 x 480 |\n| 0.5 | 16:9 | 960 x 544 |\n| 0.6 | 16:9 | 1056 x 608 |\n| 0.7 | 16:9 | 1152 x 640 |\n| 0.8 | 16:9 | 1216 x 672 |\n| 0.9 | 16:9 | 1280 x 736 |\n| 0.98 | 16:9 | 1344 x 768 |\n| 1.0 | 16:9 | 1376 x 768 |\n| 1.2 | 16:9 | 1504 x 832 |\n| 1.5 | 16:9 | 1664 x 928 |\n| 1.8 | 16:9 | 1824 x 1024 |\n| 2.0 | 16:9 | 1920 x 1088 |\n"
+      ],
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 54,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -433.56284829666924,
+        769.7120518465371
+      ],
+      "size": [
+        225,
+        142
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 138
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": []
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "ComfyMathExpression",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ]
+    },
+    {
+      "id": 55,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -677.7463885726147,
+        814.3195291650273
+      ],
+      "size": [
+        225,
+        62
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            138
+          ]
+        }
+      ],
+      "title": "Float (duration)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "PrimitiveFloat",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        12
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 67,
+      "type": "ShowText|pysssss",
+      "pos": [
+        1913.8529850317868,
+        -230.40885525451262
+      ],
+      "size": [
+        794.53125,
+        175.296875
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 189
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "shape": 6,
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-custom-scripts",
+        "ver": "609f3afaa74b2f88ef9ce8d939626065e3247469",
+        "Node name for S&R": "ShowText|pysssss",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "total 272f | 段数 2 | 每段约 136f (上限 136) | overlap 0f | stage1 864x480 | stage2 1504x832 | dtype uint8 | latent 续接 ON (strength 0.5, 8 帧种子) | 分段提示词：2 段（prompt 内用 --- 分隔） | multi-chunk(2): task forced to auto per chunk | chunk 0: 136f saved | chunk 1: 136f saved | chunks 2 | produced 272f | merged (fp32 output) | saved to output/h3_chunks/h3_chunk | audio 2 segs"
+      ]
+    },
+    {
+      "id": 68,
+      "type": "H3_TwoPassSamplerLongTimeV2",
+      "pos": [
+        1114.2198078330198,
+        25.371871460796243
+      ],
+      "size": [
+        400,
+        1054
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 196
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 183
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 184
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 185
+        },
+        {
+          "name": "drive_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "final_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "first_frame",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 186
+        },
+        {
+          "name": "last_frame",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 187
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 188
+        }
+      ],
+      "outputs": [
+        {
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            190
+          ]
+        },
+        {
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            191
+          ]
+        },
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "name": "info",
+          "type": "STRING",
+          "links": [
+            189
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "hjl668877/ComfyUI-HJL-easyuse",
+        "ver": "9219f41ce5faf2d1c7cc6ef2c8303c9309055f5c",
+        "Node name for S&R": "H3_TwoPassSamplerLongTimeV2",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "",
+        "16:9",
+        272,
+        136,
+        0,
+        true,
+        0.5,
+        8,
+        false,
+        true,
+        false,
+        true,
+        "uint8",
+        "h3_chunk",
+        0.4,
+        1.2,
+        "FL2VA",
+        "native",
+        "3 steps",
+        8,
+        4,
+        "dual_clock_euler",
+        "native_flow",
+        235574407989422,
+        "randomize",
+        0.5,
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors"
+      ]
+    },
+    {
+      "id": 69,
+      "type": "Note",
+      "pos": [
+        826.6245987937976,
+        605.7858217427527
+      ],
+      "size": [
+        262.890625,
+        479.8125
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "时长  length    段数   各段帧数\n2s\t48\t1\t48\n4s\t96\t1\t96\n5s\t120\t1\t120\n5.67s\t136\t1\t136\n---------------------------------------\n6s\t144\t2\t72 + 72\n8s\t192\t2\t96 + 96\n10s\t240\t2\t120 + 120\n11.33s\t272\t2\t136 + 136 ⭐\n---------------------------------------\n12s\t288\t3\t96 + 96 + 96\n15s\t360\t3\t120 × 3\n17s\t408\t3\t136 × 3 ⭐\n---------------------------------------\n20s\t480\t4\t120 × 4\n22.67s\t544\t4\t136 × 4 ⭐\n---------------------------------------\n24s\t576\t5\t116 × 4 + 112\n---------------------------------------\n30s\t720\t6\t120 × 6\n34s\t816\t6\t136 × 6 ⭐\n---------------------------------------\n40s\t960\t8\t120 × 8\n45.33s\t1088\t8\t136 × 8 ⭐\n---------------------------------------\n60s\t1440\t11\t131 × 10 + 130"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      69,
+      42,
+      0,
+      14,
+      0,
+      "VIDEO"
+    ],
+    [
+      138,
+      55,
+      0,
+      54,
+      0,
+      "FLOAT"
+    ],
+    [
+      183,
+      3,
+      0,
+      68,
+      1,
+      "CLIP"
+    ],
+    [
+      184,
+      4,
+      0,
+      68,
+      2,
+      "VAE"
+    ],
+    [
+      185,
+      5,
+      0,
+      68,
+      3,
+      "VAE"
+    ],
+    [
+      186,
+      15,
+      0,
+      68,
+      6,
+      "IMAGE"
+    ],
+    [
+      187,
+      16,
+      0,
+      68,
+      7,
+      "IMAGE"
+    ],
+    [
+      188,
+      20,
+      0,
+      68,
+      12,
+      "STRING"
+    ],
+    [
+      189,
+      68,
+      4,
+      67,
+      0,
+      "STRING"
+    ],
+    [
+      190,
+      68,
+      1,
+      42,
+      0,
+      "IMAGE"
+    ],
+    [
+      191,
+      68,
+      2,
+      42,
+      1,
+      "AUDIO"
+    ],
+    [
+      196,
+      1,
+      0,
+      68,
+      0,
+      "MODEL"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.4917696878628823,
+      "offset": [
+        563.8974607013132,
+        567.2685105023925
+      ]
+    },
+    "ue_links": [],
+    "workflow_name": "MiniMax H3 OpenVDN DMD8 fl2va (Advanced)",
+    "links_added_by_ue": [],
+    "frontendVersion": "1.47.11",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

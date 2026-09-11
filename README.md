@@ -42,6 +42,77 @@
 
 > **显存时序说明**：节点内部的两个 ReservedVRAM 设置都在开头执行一次（与原工作流真实执行顺序一致），运行期间不卸载模型，阶段2 直接复用阶段1 已加载的 UNET。请勿在外部再对同一 prompt 挂载运行中卸载模型的节点。
 
+### H3 Two-Pass Long Time V2 (HJL)
+
+**长视频**节点：把整段视频按时间**均分**成多段，每段各跑一次完整双阶段采样，再用 **latent 续接**把段与段接上；支持**分段提示词**，让不同段落使用不同描述。
+
+![H3 Two-Pass Long Time V2 节点](screenshot-H3-Two-Pass-Long-Time-V2.png)
+
+单段时行为与 H3 Two-Pass Sampler 一致；超过单段上限（`temporal_chunk_frames`）时自动分段，从而突破单次生成的长度限制。
+
+**核心机制**
+
+| 机制 | 说明 |
+|---|---|
+| 时间分块 | 段数 = ⌈length ÷ temporal_chunk_frames⌉，再把总帧数**均分**到各段，避免出现极短的尾段（旧版固定切法会出现 136+136+16 这种尾巴，导致最后一段内容接不上） |
+| latent 续接 | 取上一段**阶段1 去噪后的视频 latent 尾部**（默认 8 帧），按 `continuation_strength` 截断 sigma 调度后作为下一段起点——继承运动轨迹、细节与纹理，而不是每段从纯噪声重新「想象」 |
+| 分段提示词 | `prompt` 内用**单独一行** `---` 分隔，依次对应第 1/2/3… 段；提示词段数少于渲染段数时，多余的段沿用最后一条；不写 `---` 则全段通用 |
+
+**主要输入**（其余端口与 H3 Two-Pass Sampler 相同）
+
+| 端口 | 默认 | 说明 |
+|---|---|---|
+| prompt | 空 | 视频描述，支持 `---` 分段 |
+| length | 141 | **总**帧数（24fps） |
+| temporal_chunk_frames | 136 | 单段帧数**上限**，必须 17 的倍数（建议设成你单次能稳定跑通的长度，6 秒 ≈ 136） |
+| temporal_overlap_frames | 0 | **额外**丢弃的段首帧数。节点固定会丢弃与上一段尾帧重复的 1 帧，这里填 N 表示再多丢 N 帧，调大会造成时间跳跃 |
+| latent_continuation | True | latent 续接开关（关闭则退化为每段纯噪声起点） |
+| continuation_strength | 0.5 | 0–1：越大越贴近上一段（更连贯、变化更小）；与分段提示词同用时建议降到 0.3 左右 |
+| continuation_frames | 8 | 用上一段末尾几个 latent 时间帧做种子 |
+| same_seed_all_chunks | False | 全段共用 seed，纹理更一致 |
+| save_per_chunk | True | 每段解完立刻写 PNG 到 `output/h3_chunks/<前缀>/chunk_XXXX/` 并释放该段帧 |
+| combine_saved_chunks | False | 跑完用 ffmpeg 把各段 PNG 流式合成 `combined.mp4`（结尾零内存尖峰） |
+| merge_chunks | True | 把各段拼成完整 `frames` 输出；**超过约 15 秒建议关闭**，改用上面的磁盘方案 |
+| frame_dtype | uint8 | 段内累积精度：uint8 省 4 倍内存（输出仍是 fp32 `[0,1]`，画质无可闻影响） |
+| chunk_filename_prefix | h3_chunk | 落盘子目录名 |
+
+**输出**
+
+| 端口 | 说明 |
+|---|---|
+| av_latent | 最后一段的 AV latent |
+| frames | 完整帧序列（`merge_chunks=True`）；否则只含最后一段 |
+| generated_audio | 按段拼接好的音轨 |
+| **video** | 合成成功时的 VIDEO，可直接接视频预览/保存节点，节点上也会内嵌预览 |
+| info | 执行摘要（段数 / 每段帧数 / 续接状态 / 提示词段数 / 落盘路径） |
+
+**时长 ↔ 帧数 ↔ 段数对照**（24fps，`temporal_chunk_frames = 136`）
+
+| 时长 | length | 段数 | 各段帧数 |
+|---|---|---|---|
+| 5.67s | 136 | 1 | 136 |
+| 8s | 192 | 2 | 96 + 96 |
+| **11.33s** | **272** | **2** | **136 + 136** ⭐ |
+| 12s | 288 | 3 | 96 × 3 |
+| **17s** | **408** | **3** | **136 × 3** ⭐ |
+| 20s | 480 | 4 | 120 × 4 |
+| **22.67s** | **544** | **4** | **136 × 4** ⭐ |
+| 30s | 720 | 6 | 120 × 6 |
+| **34s** | **816** | **6** | **136 × 6** ⭐ |
+| 45.33s | 1088 | 8 | 136 × 8 ⭐ |
+
+规律：`段数 = ⌈length ÷ 136⌉`；`length = N × 136` 时每段恰好等长（5.67 / 11.33 / 17.00 / 22.67 / 28.33 / 34.00 / 39.67 / 45.33 / 51.00 / 56.67 秒），显存与耗时可预测性最好。想固定段数时调 `temporal_chunk_frames`：`chunk ≥ length ÷ 期望段数`，再向上取到 17 的倍数。
+
+**建议的三种取片方式**
+
+| 场景 | 配置 |
+|---|---|
+| ≤15 秒 | `merge_chunks=True`，直接使用 `frames` / `video` 端口 |
+| 更长（推荐） | `merge_chunks=False` + `save_per_chunk=True` + `combine_saved_chunks=True`，全程走磁盘，内存零尖峰 |
+| 补救已落盘的 PNG | 独立工具 `combine_h3_chunks.py`（见下） |
+
+> ⚠️ 长视频的瓶颈通常是**系统内存**而非显存：ComfyUI 以 fp32 保存帧（1.2MP 约 15MB/帧），且会按需 staging 模型权重。运行前关闭其他占内存的程序；`merge_chunks=True` 时结尾需要一份完整 fp32 帧序列（11 秒 ≈ 4GB，60 秒 ≈ 21GB）。
+
 ### H3 Edit Conditioning W/H (HJL)
 
 H3 两阶段放大专用：更新 conditioning 宽高，并把 `minimax_refs` / `minimax_keyframes` 里的参考 latent 调整到新尺寸。
@@ -51,6 +122,28 @@ H3 两阶段放大专用：更新 conditioning 宽高，并把 `minimax_refs` / 
 - 自动同步 ref 的 latent_h / latent_w / latent_t，彻底解决两阶段放大的 `shape mismatch` 报错。
 
 画质排序：**原图重编码（接图） > latent decode→encode > latent 插值**。
+
+## 第三方兼容补丁：`t8_compat.py`
+
+comfyui-minimax-h3-audio-T8 的 **Hybrid** 兼容性探测在当前 ComfyUI 上会构造一个非法 keyframe 索引（既不是首帧 0、也不是尾帧 `frame_count-1`），导致探测必然抛错，进而禁用 Hybrid 路径——表现为「首帧/尾帧 + 参考图」同时接线时报：
+
+```
+RuntimeError: The active MiniMax H3 PackedLayout implementation rejected
+the guarded legacy Hybrid compatibility probe.
+```
+
+本包**不修改 T8 源文件**，而是在运行时打一个内存补丁（`t8_compat.py` → `ensure_t8_hybrid_probe_fix()`）：遇到非法索引时改写为首帧再交给原函数。T8 的真实生成路径只使用合法索引，因此对生成结果无任何影响；**上游修复后该补丁会自动退化为透明传递**，无需手动移除。包内各采样器节点（H3 Two-Pass Sampler / H3 Two-Pass Long Time V2）在 `execute` 开头都会调用一次（幂等）。
+
+## 独立工具：`combine_h3_chunks.py`
+
+把已落盘的逐段 PNG 序列合成为 MP4，**不需要重跑节点**：
+
+```bash
+python combine_h3_chunks.py "D:/ComfyUI_windows_portable_nvidia/ComfyUI/output/h3_chunks/h3_chunk" \
+    --fps 24 --crf 18
+```
+
+按目录名顺序拼接所有 `chunk_*/` 下的 PNG，输出 `combined.mp4`（H.264 / yuv420p）。依赖 `imageio-ffmpeg`（自带 ffmpeg 二进制，`pip install imageio-ffmpeg`）。
 
 ## 依赖节点（必装）
 
@@ -101,11 +194,12 @@ git clone https://github.com/hjl668877/ComfyUI-HJL-easyuse.git
 
 ## Example Workflows
 
-`workflows/` 目录提供两个示例：
+`workflows/` 目录提供三个示例：
 
 | 文件 | 说明 | 额外依赖 |
 |---|---|---|
 | `Minimax_H3_two_pass_sampler_example_workflow_HJL.json` | 基础双阶段工作流（H3_TwoPassSampler 一键节点版） | 仅必装依赖 |
+| `Minimax_H3_Two_Pass_FL2VA_Long_Time_V2_HJL_example.json` | **长视频示例**：H3 Two-Pass Long Time V2 + FL2VA 首尾帧，272 帧（11.33s / 2 段），内置 `---` 分段提示词与「时长-段数」对照便签 | 仅必装依赖 |
 | `Minimax_H3_OpenVDN_DMD8_FL2VA_two_pass_workflow_HJL.json` | OpenVDN DMD8 + FL2VA（首尾帧）加速版，含 VDN 模型合成与 Sol-Attn 稀疏注意力 | 需另装 VDN-H3 权重与 Sol-Attn 节点，见上方「加速技术」 |
 
 加载后按 T8 仓库说明放置模型文件即可运行。
@@ -121,4 +215,6 @@ git clone https://github.com/hjl668877/ComfyUI-HJL-easyuse.git
 ## 更新计划
 
 - [x] 示例工作流 JSON（基础版 + OpenVDN 加速版）
+- [x] 长视频节点 H3 Two-Pass Long Time V2（时间分块 + latent 续接 + 分段提示词）
+- [x] 长视频示例工作流（272 帧 / 2 段 / FL2VA）
 - [ ] 更多画幅比与时长组合示例
